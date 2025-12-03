@@ -31,7 +31,7 @@ public:
     IOCPSever() : listenSocket(INVALID_SOCKET), comletionPort(NULL), running(false) {}
     bool Initialize()
     {
-        // åˆå§‹åŒ–winSock
+        // ³õÊ¼»¯winSock
         WSADATA wsaData;
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         {
@@ -39,7 +39,7 @@ public:
             return false;
         }
 
-        // åˆ›å»ºå®Œæˆç«¯å£
+        // ´´½¨Íê³É¶Ë¿Ú
         comletionPort = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 0);
         if (comletionPort == NULL)
         {
@@ -47,7 +47,7 @@ public:
             return false;
         }
 
-        // åˆ›å»ºç›‘å¬socket
+        // ´´½¨¼àÌýsocket
         struct addrinfo *result = NULL, hints;
         ZeroMemory(&hints, sizeof(hints));
         hints.ai_family = AF_INET;
@@ -68,7 +68,7 @@ public:
             return false;
         }
 
-        // ç»‘å®šsocket
+        // °ó¶¨socket
         if (bind(listenSocket, result->ai_addr, (int)result->ai_addrlen) == SOCKET_ERROR)
         {
             std::cerr << "bind failed:" << WSAGetLastError() << std::endl;
@@ -77,7 +77,7 @@ public:
             return false;
         }
 
-        // å¼€å§‹ç›‘å¬
+        // ¿ªÊ¼¼àÌý
         if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
         {
             std::cerr << "listem failed:" << WSAGetLastError() << std::endl;
@@ -101,7 +101,7 @@ public:
             DWORD bytesTransferred=0;
             ULONG_PTR completionKey=0;
             OVERLAPPED* overlapped=nullptr;
-            //ç­‰å¾…I/Oå®Œæˆ
+            //µÈ´ýI/OÍê³É
             BOOL success=GetQueuedCompletionStatus(
                 comletionPort,
                 &bytesTransferred,
@@ -115,10 +115,33 @@ public:
                 {
                     ClientContext* context=CONTAINING_RECORD(overlapped,ClientContext,overlapped);
                     std::cout<<"Client disconnected: "<<context->socket<<std::endl;
-                    
+                    closesocket(context->socket);
+                    delete context;
                 }
+                continue;
+            }
+            if(completionKey==0)
+            {
+                //ÐÂÁ¬½Ó
+                Accept
             }
         }
+    }
+    void AcceptConnections()
+    {
+        SOCKET clientSocket=accept(listenSocket,NULL,NULL);
+        if(clientSocket==INVALID_SOCKET)
+        {
+            std::cerr<<"accept failed:"<<WSAGetLastError()<<std::endl;
+            return ;
+        }
+
+        //´´½¨¿Í»§¶ËÉÏÏÂÎÄ
+        ClientContext* context=new ClientContext();
+        ZeroMemory(context,sizeof(ClientContext));
+        context->socket=clientSocket;
+        context->wsaBuf.buf=context->buffer;
+        
     }
 };
 int main(int, char **)
