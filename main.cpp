@@ -123,7 +123,20 @@ public:
             if(completionKey==0)
             {
                 //新连接
-                Accept
+                AcceptConnections();
+            }else{
+                //数据处理
+                ClientContext* context=(ClientContext*)completionKey;
+                if(bytesTransferred==0)
+                {
+                    //连接关闭
+                    std::cout<<"Client disconnected: "<<context->socket<<std::endl;
+                    closesocket(context->socket);
+                    delete context;
+                } else{
+                    // 处理接收到的数据
+                    
+                }
             }
         }
     }
@@ -142,6 +155,20 @@ public:
         context->socket=clientSocket;
         context->wsaBuf.buf=context->buffer;
         
+    }
+    void PostRecv(ClientContext* context)
+    {
+        DWORD flages=0;
+        DWORD bytesRecv=0;
+        int result=WSARecv(
+            context->socket,
+            &context->wsaBuf,
+            1,
+            &bytesRecv,
+            0,
+            NULL,
+            NULL
+        );
     }
 };
 int main(int, char **)
