@@ -34,6 +34,7 @@ public:
     {
         // 初始化winSock
         WSADATA wsaData;
+        // WSAStartup Windows Socket API 初始化函数
         if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
         {
             std::cerr << "WSAStartup failed:" << WSAGetLastError() << std::endl;
@@ -145,21 +146,33 @@ public:
     }
     void AcceptConnections()
     {
+        /**
+         * accept() 函数是Windows Socket API中用于接收客户端连接的关键函数 
+         */
         SOCKET clientSocket = accept(listenSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET)
         {
+            //客户端连接失败则输出错误消息
             std::cerr << "accept failed:" << WSAGetLastError() << std::endl;
             return;
         }
 
         // 创建客户端上下文
         ClientContext *context = new ClientContext();
-        ZeroMemory(context, sizeof(ClientContext));
+        /**
+         * ZeroMemory 是 Windows API 中的一个宏/函数，用于将内存块清零
+         */
+        ZeroMemory(context, sizeof(ClientContext));//清零内存块 
         context->socket = clientSocket;
         context->wsaBuf.buf = context->buffer;
     }
     void PostRecv(ClientContext *context)
     {
+        /**
+         * DWORD 是 Windows API中广泛使用的基本数据类型
+         * 代表 Double Word (双字)
+         * 等效于 unsigned long
+         */
         DWORD flages = 0;
         DWORD bytesRecv = 0;
         int result = WSARecv(
@@ -209,40 +222,41 @@ public:
         // 投递初始的接收连接操作
         PostQueuedCompletionStatus(comletionPort, 0, 0, NULL);
 
-        // 等待工作者线程
+        // 等待所有工作者线程结束
         for (auto &thread : workerThreads)
         {
             if (thread.joinable())
             {
-                thread.join();
+                thread.join(); // 阻塞等待线程结束
             }
         }
     }
     void Stop()
     {
-        running = false;
+        running = false; // 设置停止标志
         // 通知所有工作者线程退出
         for (size_t i = 0; i < workerThreads.size(); ++i)
         {
             PostQueuedCompletionStatus(comletionPort, 0, 0, NULL);
         }
+        // 清理资源
         closesocket(listenSocket);
         CloseHandle(comletionPort);
-        WSACleanup();
+        WSACleanup(); // 清理winsock
     }
     ~IOCPSever()
     {
-        Stop();
+        Stop(); // 析构时自动停止服务器
     }
 };
 
 int main(int, char **)
 {
-    IOCPSever server;
-    if (!server.Initialize())
+    IOCPSever server;         // 创建服务器实例
+    if (!server.Initialize()) // 初始化服务器
     {
-        return 1;
+        return 1; // 初始化失败返回错误码
     }
-    server.Run();
-    return 0;
+    server.Run(); // 运行服务器
+    return 0;     // 正常退出
 }
