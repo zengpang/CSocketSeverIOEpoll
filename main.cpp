@@ -50,14 +50,37 @@ public:
         }
 
         // 创建监听socket
+        /**
+         * addrinfo 结构体在头文件<sys/types.h> 和<sys/socket.h> 或 <netdb.h> 中定义，具体定义如下
+         * struct addrinfo{
+         *   int ai_flages;            // 控制欣慰的标志(例如 AI_PASSIVE)
+         *   int ai_family;            // 地址族 (例如 AF_INET,AF_INET6)
+         *   int ai_socktype;          // 套接字类型(例如 SOCK_STREAM,SOCK_DGRAM)
+         *   int ai_protocol;          // 协议类型(例如 IPPROTO_TCP)
+         *   socklen_t ai_addrlen;     //ai_addr 的长度
+         *   struct sockaddr *ai_addr; //指向 sockaddr 结构的指针
+         *   char *ai_canonname;       //规范主机名
+         *   struct addrinfo *ai_next; //链表中的下一个结构
+         * };
+         */
         struct addrinfo *result = NULL, hints;
         ZeroMemory(&hints, sizeof(hints));
         hints.ai_family = AF_INET;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
         hints.ai_flags = AI_PASSIVE;
+        /**
+         * getaddrinfo();根据主机名，服务名或其他参数生成一个addrinfo结构的链表，具体定义如下
+         * int getaddrinfo(const char *node,const char *service,
+         *  const struct addrinfo *hints,struct addrinfo **res);
+         * node:主机名或IP地址字符串(例如"example.com"或"192.168.1.1")。
+         * service:服务名或端口号(例如"http"或"80")。
+         * hints:提供期望的地址类型(例如IPV4或IPV6)的提示。
+         * res:返回的addrinfo链表。
+         */
         if (getaddrinfo(NULL, DEFAULT_PORT, &hints, &result) != 0)
         {
+            //输出错误信息
             std::cerr << "getaddrinfo failed:" << WSAGetLastError() << std::endl;
             return false;
         }
@@ -66,6 +89,9 @@ public:
         if (listenSocket == INVALID_SOCKET)
         {
             std::cerr << "socket failed:" << WSAGetLastError() << std::endl;
+            /**
+             * freeaddrinfo():释放由getaddrinfo()分配的内存。
+             */
             freeaddrinfo(result);
             return false;
         }
@@ -147,12 +173,12 @@ public:
     void AcceptConnections()
     {
         /**
-         * accept() 函数是Windows Socket API中用于接收客户端连接的关键函数 
+         * accept() 函数是Windows Socket API中用于接收客户端连接的关键函数
          */
         SOCKET clientSocket = accept(listenSocket, NULL, NULL);
         if (clientSocket == INVALID_SOCKET)
         {
-            //客户端连接失败则输出错误消息
+            // 客户端连接失败则输出错误消息
             std::cerr << "accept failed:" << WSAGetLastError() << std::endl;
             return;
         }
@@ -162,7 +188,7 @@ public:
         /**
          * ZeroMemory 是 Windows API 中的一个宏/函数，用于将内存块清零
          */
-        ZeroMemory(context, sizeof(ClientContext));//清零内存块 
+        ZeroMemory(context, sizeof(ClientContext)); // 清零内存块
         context->socket = clientSocket;
         context->wsaBuf.buf = context->buffer;
     }
