@@ -8,9 +8,18 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define DEFAULT_PORT "8080"
+#define DEFAULT_PORT "8888"
 #define DEFAULT_BUFLEN 1024
 #define MAX_CLIENTS 1000
+/**
+ * socket 发送消息
+ */
+void socketSendMsg(SOCKET clientSocket,const char *sendMessage){
+    if(!send(clientSocket,sendMessage,strlen(sendMessage),0))
+    {
+        std::cerr << "send failed: " << WSAGetLastError() << std::endl; // 输出发送失败的错误信息
+    }
+}
 class IOCPSever
 {
 private:
@@ -80,7 +89,7 @@ public:
          */
         if (getaddrinfo(NULL, DEFAULT_PORT, &hints, &result) != 0)
         {
-            //输出错误信息
+            // 输出错误信息
             std::cerr << "getaddrinfo failed:" << WSAGetLastError() << std::endl;
             return false;
         }
@@ -119,7 +128,7 @@ public:
     {
         for (int i = 0; i < numThreads; ++i)
         {
-            workerThreads.emplace_back(&IOCPSever::workerThreads, this);
+            workerThreads.emplace_back(&IOCPSever::WorkerThread, this);
         }
     }
     void WorkerThread()
@@ -150,7 +159,8 @@ public:
             if (completionKey == 0)
             {
                 // 新连接
-                AcceptConnections();
+                AcceptConnections(bytesTransferred);
+                
             }
             else
             {
@@ -166,11 +176,14 @@ public:
                 else
                 {
                     // 处理接收到的数据
+                    ProcessData(context, bytesTransferred);
+                    // 继续投递接收操作
+                    PostRecv(context);
                 }
             }
         }
     }
-    void AcceptConnections()
+    void AcceptConnections(DWORD bytesTransferred)
     {
         /**
          * accept() 函数是Windows Socket API中用于接收客户端连接的关键函数
@@ -191,6 +204,13 @@ public:
         ZeroMemory(context, sizeof(ClientContext)); // 清零内存块
         context->socket = clientSocket;
         context->wsaBuf.buf = context->buffer;
+        
+        const char *connectMsg = "服务端发送的连接测试消息";
+        socketSendMsg(clientSocket, connectMsg);
+        if (bytesTransferred != 0)
+        {
+          std::cout << "初始化连接信息 "  << std::string(context->buffer, bytesTransferred) << std::endl;
+        }
     }
     void PostRecv(ClientContext *context)
     {
@@ -243,7 +263,7 @@ public:
         StartWorkerThreads(numThreads);
 
         std::cout << "Server started on port " << DEFAULT_PORT
-                  << " with" << numThreads << " worker threads" << std::endl;
+                  << " with " << numThreads << " worker threads" << std::endl;
 
         // 投递初始的接收连接操作
         PostQueuedCompletionStatus(comletionPort, 0, 0, NULL);
