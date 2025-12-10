@@ -159,7 +159,13 @@ public:
              *  说明:输出参数，返回已完成I/O操作运输的字节数。
              * lpCompletionKey
              *  类型:PULONG_PTR (指向ULONG_RTP的指针)
-             *  
+             *  说明:输出参数，返回与完成端口关联的"完成键"（Completion Key）
+             * lpOverlapped
+             *  类型:LPOVERLAPPED* (指向OVERLAPPED结构指针的指针)
+             *  说明:输出参数，返回与已完成I/O操作关联的OVERLAPPED 结构地址。通常通过此结构获取更新详细的上下文信息(如自定义扩展结构)
+             * dWMilliseconds
+             *  类型:DWORD
+             *  说明:超时时间(毫秒)。若为INFINITE,则无限等待;若为0，则立即返回(无完成项时返回FALSE)
              */
             BOOL success = GetQueuedCompletionStatus(
                 comletionPort,
