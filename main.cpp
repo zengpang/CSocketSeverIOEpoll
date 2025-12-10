@@ -14,8 +14,9 @@
 /**
  * socket 发送消息
  */
-void socketSendMsg(SOCKET clientSocket,const char *sendMessage){
-    if(!send(clientSocket,sendMessage,strlen(sendMessage),0))
+void socketSendMsg(SOCKET clientSocket, const char *sendMessage)
+{
+    if (!send(clientSocket, sendMessage, strlen(sendMessage), 0))
     {
         std::cerr << "send failed: " << WSAGetLastError() << std::endl; // 输出发送失败的错误信息
     }
@@ -139,6 +140,27 @@ public:
             ULONG_PTR completionKey = 0;
             OVERLAPPED *overlapped = nullptr;
             // 等待I/O完成
+            /**
+             * C++ GetQueuedCompletionStatus 是 Windows 平台提供的一个核心函数,用于处理I/O完成端口
+             * 相关的异步I/O操作。它是实现高性能，可扩展服务器应用程序(如网路服务器，文件服务器等)的关键组件之一
+             * 函数原型
+             * BOOL GetQueuedCompletionStatus(
+             *     HANDLE CompletionPort,
+             *     LPDWORD lpNumberOfBytesTransferred,
+             *     PULONG_PTR lpCompletionKey,
+             *     LPOVERLAPPED *lpOverlapped,
+             *     DWORD dwMilliseconds
+             * )
+             * CompletionPort:
+             *  类型:HANDLE (typeof void *HANDLE)
+             *  说明:已关联的完成端口句柄，通过 CreateIoCompletionPort 创建。
+             * lpNumberOfBytesTransferred
+             *  类型:LPDWORD (指向DWORD的指针,等同于 unsigned long*)
+             *  说明:输出参数，返回已完成I/O操作运输的字节数。
+             * lpCompletionKey
+             *  类型:PULONG_PTR (指向ULONG_RTP的指针)
+             *  
+             */
             BOOL success = GetQueuedCompletionStatus(
                 comletionPort,
                 &bytesTransferred,
@@ -160,7 +182,6 @@ public:
             {
                 // 新连接
                 AcceptConnections(bytesTransferred);
-                
             }
             else
             {
@@ -204,12 +225,12 @@ public:
         ZeroMemory(context, sizeof(ClientContext)); // 清零内存块
         context->socket = clientSocket;
         context->wsaBuf.buf = context->buffer;
-        
+
         const char *connectMsg = "服务端发送的连接测试消息";
         socketSendMsg(clientSocket, connectMsg);
         if (bytesTransferred != 0)
         {
-          std::cout << "初始化连接信息 "  << std::string(context->buffer, bytesTransferred) << std::endl;
+            std::cout << "初始化连接信息 " << std::string(context->buffer, bytesTransferred) << std::endl;
         }
     }
     void PostRecv(ClientContext *context)
